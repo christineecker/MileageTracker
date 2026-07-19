@@ -162,10 +162,10 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-on-surface flex flex-col pb-28 relative max-w-md mx-auto w-full border-x border-surface-container-high/40 shadow-2xl">
+    <div className="min-h-screen bg-background text-on-surface flex flex-col pb-[calc(7rem+env(safe-area-inset-bottom,0px))] relative max-w-md mx-auto w-full border-x border-surface-container-high/40 shadow-2xl">
       
       {/* Top App Bar */}
-      <header className="bg-background/90 backdrop-blur-md sticky top-0 z-40 w-full flex justify-between items-center px-6 h-16 border-b border-surface-container-high/20">
+      <header className="bg-background/90 backdrop-blur-md sticky top-0 z-40 w-full flex justify-between items-center px-6 pt-[calc(1rem+env(safe-area-inset-top,0px))] pb-4 border-b border-surface-container-high/20">
         <div 
           onClick={() => setActiveTab('status')}
           className="flex items-center gap-2 hover:opacity-85 transition-opacity cursor-pointer select-none"
@@ -249,7 +249,7 @@ export default function App() {
       </main>
 
       {/* Persistent Bottom Floating Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-container-lowest/90 backdrop-blur-md py-4 pb-6 px-6 border-t border-surface-container shadow-lg max-w-md mx-auto rounded-t-3xl flex justify-around items-center">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-surface-container-lowest/90 backdrop-blur-md pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] px-6 border-t border-surface-container shadow-lg max-w-md mx-auto rounded-t-3xl flex justify-around items-center">
         {/* Lease Tab */}
         <button
           onClick={() => setActiveTab('lease')}
