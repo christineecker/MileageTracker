@@ -1,12 +1,9 @@
 const CACHE_NAME = 'mileagetracker-cache-v1';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon.svg',
-  '/src/main.tsx',
-  '/src/App.tsx',
-  '/src/index.css'
+  './',
+  'index.html',
+  'manifest.json',
+  'icon.svg'
 ];
 
 // Install Event - cache core static shell files
@@ -60,7 +57,7 @@ self.addEventListener('fetch', (event) => {
           }
           // If completely offline and page can't be fetched, serve root SPA shell
           if (event.request.mode === 'navigate') {
-            return caches.match('/');
+            return caches.match('./') || caches.match('index.html');
           }
         });
       })
