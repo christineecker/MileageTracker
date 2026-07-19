@@ -1,0 +1,6 @@
+{
+  "name": "MileageTracker",
+  "description": "A mindful, minimalist vehicle lease and odometer tracking application.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
