@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { LayoutGrid, PlusCircle, Activity, Car, Leaf, RotateCcw, Github } from 'lucide-react';
+import { LayoutGrid, PlusCircle, Activity, Car, Leaf, RotateCcw, Github, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { LeaseInfo, OdometerLog, TripLog, PurposeType } from './types';
@@ -17,7 +17,13 @@ import LeaseView from './components/LeaseView';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('status');
-  const [hoveredButton, setHoveredButton] = useState<'reset' | 'github' | null>(null);
+  const [hoveredButton, setHoveredButton] = useState<'reset' | 'github' | 'theme' | null>(null);
+
+  // Theme support
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('mileage_tracker_theme');
+    return (saved === 'dark' || saved === 'light') ? saved : 'light';
+  });
 
   // Load state from local storage or fallback to defaults (starting empty of tracking logs)
   const [lease, setLease] = useState<LeaseInfo>(() => {
@@ -38,6 +44,16 @@ export default function App() {
   // Hardcoded specific GitHub profile information as requested
   const githubUsername = 'christineecker';
   const githubRepoUrl = 'https://github.com/christineecker/MileageTracker';
+
+  // Theme Sync effect
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('mileage_tracker_theme', theme);
+  }, [theme]);
 
   // Sync state to local storage
   useEffect(() => {
@@ -198,6 +214,35 @@ export default function App() {
                   className="absolute right-0 top-11 z-50 bg-neutral-900 text-white text-[11px] font-medium px-3 py-2 rounded-xl shadow-xl whitespace-nowrap pointer-events-none border border-white/10"
                 >
                   Clear all odometer and trip history logs
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="relative">
+            <button 
+              onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+              onMouseEnter={() => setHoveredButton('theme')}
+              onMouseLeave={() => setHoveredButton(null)}
+              className="p-2 rounded-full hover:bg-surface-container text-on-surface-variant/70 hover:text-primary transition-all active:scale-95 cursor-pointer flex items-center justify-center"
+              aria-label="Toggle Theme"
+            >
+              {theme === 'light' ? (
+                <Moon className="w-4.5 h-4.5" />
+              ) : (
+                <Sun className="w-4.5 h-4.5" />
+              )}
+            </button>
+            <AnimatePresence>
+              {hoveredButton === 'theme' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  className="absolute right-0 top-11 z-50 bg-neutral-900 text-white text-[11px] font-medium px-3 py-2 rounded-xl shadow-xl whitespace-nowrap pointer-events-none border border-white/10"
+                >
+                  Switch to {theme === 'light' ? 'dark' : 'light'} design mode
                 </motion.div>
               )}
             </AnimatePresence>

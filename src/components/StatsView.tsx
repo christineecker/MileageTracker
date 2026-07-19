@@ -734,20 +734,20 @@ export default function StatsView({ lease, odometerLogs, onNavigate }: StatsView
 
       {/* Projected Surplus Banner */}
       <section id="projected_surplus_banner_section">
-        <div className="bg-primary text-on-primary p-6 rounded-3xl shadow-md border border-primary-container relative overflow-hidden">
+        <div className="bg-[#181e1a] dark:bg-[#1a201c] text-white p-6 rounded-3xl shadow-md border border-surface-container-high/20 dark:border-white/10 relative overflow-hidden">
           {/* Subtle curved background overlay to emulate abstract design in screenshot */}
-          <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-secondary opacity-10 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#8bc391] opacity-10 rounded-full blur-2xl pointer-events-none" />
           
           <div className="flex gap-4 items-start relative z-10">
             <div className="p-3 bg-white/5 rounded-2xl">
-              <TrendingUp className="w-5 h-5 text-secondary" />
+              <TrendingUp className="w-5 h-5 text-[#8bc391]" />
             </div>
             <div className="flex-1">
               <h3 className="font-sans text-[16px] font-medium tracking-tight text-white mb-2">
                 Real-Time Pace Projection
               </h3>
               <p className="font-sans text-[13px] leading-relaxed text-white/80 mb-5">
-                You are averaging <span className="font-bold text-white">{leaseMetrics.averageMonthly.toLocaleString()} km/month</span>. At this rate, you'll have <span className="font-bold text-secondary">{leaseMetrics.projectedSurplus.toLocaleString()} km extra</span> at the end of your lease.
+                You are averaging <span className="font-bold text-white">{leaseMetrics.averageMonthly.toLocaleString()} km/month</span>. At this rate, you'll have <span className="font-bold text-[#8bc391]">{leaseMetrics.projectedSurplus.toLocaleString()} km extra</span> at the end of your lease.
               </p>
               
               <button 
