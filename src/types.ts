@@ -7,6 +7,13 @@ export interface LeaseInfo {
   totalAllowedKm: number;
   initialOdometer: number;
   monthlyAllocation: number;
+  freeExcessKm?: number;
+  carRegistration?: string;
+  firstRegistrationDate?: string;
+  parkingPermitValidFrom?: string;
+  parkingPermitValidTo?: string;
+  leaseContractNumber?: string;
+  leaseCustomerNumber?: string;
 }
 
 export interface OdometerLog {

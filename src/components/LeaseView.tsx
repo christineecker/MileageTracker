@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Info, Save, Car, Calendar, Euro, ArrowRight } from 'lucide-react';
+import { Settings, Info, Save, Car, Calendar, Euro, ArrowRight, Bell } from 'lucide-react';
 import { LeaseInfo } from '../types';
 
 interface LeaseViewProps {
@@ -12,9 +12,23 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
   const [startDate, setStartDate] = useState<string>(lease.startDate);
   const [termMonths, setTermMonths] = useState<string>(lease.termMonths.toString());
   
-  // Calculate initial allowed km per year based on current totalAllowedKm and termMonths
+  const initialFreeExcessKm = lease.freeExcessKm !== undefined ? lease.freeExcessKm : 2500;
+  const [freeExcessKm, setFreeExcessKm] = useState<string>(initialFreeExcessKm.toString());
+
+  const [carRegistration, setCarRegistration] = useState<string>(lease.carRegistration || '');
+  const [firstRegistrationDate, setFirstRegistrationDate] = useState<string>(lease.firstRegistrationDate || '');
+  const [parkingPermitValidFrom, setParkingPermitValidFrom] = useState<string>(lease.parkingPermitValidFrom || '');
+  const [parkingPermitValidTo, setParkingPermitValidTo] = useState<string>(lease.parkingPermitValidTo || '');
+  const [leaseContractNumber, setLeaseContractNumber] = useState<string>(lease.leaseContractNumber || '');
+  const [leaseCustomerNumber, setLeaseCustomerNumber] = useState<string>(lease.leaseCustomerNumber || '');
+
+  // Calculate initial allowed km per year based on current base allowed km (totalAllowedKm - freeExcessKm if present) and termMonths
+  const baseAllowedKm = lease.freeExcessKm !== undefined 
+    ? (lease.totalAllowedKm - lease.freeExcessKm) 
+    : lease.totalAllowedKm;
+
   const initialAllowedKmPerYear = lease.termMonths > 0 
-    ? Math.round((lease.totalAllowedKm / lease.termMonths) * 12).toString()
+    ? Math.round((baseAllowedKm / lease.termMonths) * 12).toString()
     : "15000";
   const [allowedKmPerYear, setAllowedKmPerYear] = useState<string>(initialAllowedKmPerYear);
   const [initialOdometer, setInitialOdometer] = useState<string>(lease.initialOdometer.toString());
@@ -27,9 +41,11 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
   const allowedKmPerYearNum = parseInt(allowedKmPerYear, 10) || 0;
   const initialOdometerNum = parseInt(initialOdometer, 10) || 0;
   const excessChargeNum = parseFloat(excessCharge) || 0;
+  const freeExcessKmNum = parseInt(freeExcessKm, 10) || 0;
 
-  // Compute total allowed km based on terms (months) and allowed distance per year:
-  const totalAllowedKmNum = Math.round((allowedKmPerYearNum / 12) * termMonthsNum);
+  // Compute total allowed km based on terms (months), allowed distance per year, plus free excess km:
+  const baseTotalAllowedKmNum = Math.round((allowedKmPerYearNum / 12) * termMonthsNum);
+  const totalAllowedKmNum = baseTotalAllowedKmNum + freeExcessKmNum;
 
   const calculatedMonthlyAllocation = Math.round(totalAllowedKmNum / Math.max(1, termMonthsNum));
   const calculatedDailyAllocation = (totalAllowedKmNum / (Math.max(1, termMonthsNum) * 30.4375)).toFixed(1);
@@ -57,6 +73,13 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
       totalAllowedKm: totalAllowedKmNum,
       initialOdometer: initialOdometerNum,
       monthlyAllocation: calculatedMonthlyAllocation,
+      freeExcessKm: freeExcessKmNum,
+      carRegistration,
+      firstRegistrationDate,
+      parkingPermitValidFrom,
+      parkingPermitValidTo,
+      leaseContractNumber,
+      leaseCustomerNumber,
     });
     
     setIsSaved(true);
@@ -93,6 +116,61 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
         </div>
       </section>
 
+      {/* Active Lease Info Metadata Cards */}
+      {(lease.carRegistration || lease.firstRegistrationDate || lease.parkingPermitValidFrom || lease.parkingPermitValidTo || lease.leaseContractNumber || lease.leaseCustomerNumber) && (
+        <section className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-[0_4px_40px_-12px_rgba(0,0,0,0.03)] flex flex-col gap-4">
+          <div className="flex items-center gap-2 border-b border-outline-variant/20 pb-2">
+            <Car className="w-4 h-4 text-secondary animate-pulse" />
+            <h3 className="font-sans text-[11px] font-bold tracking-[0.1em] text-primary uppercase">
+              Car & Contract Registry
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3.5 text-[12px]">
+            {lease.carRegistration && (
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] font-bold tracking-[0.05em] text-on-surface-variant/75 uppercase">Registration (Kennzeichen)</span>
+                <span className="font-mono text-primary font-semibold tracking-wider bg-surface-container/40 px-2 py-0.5 rounded border border-outline-variant/10 w-fit">{lease.carRegistration}</span>
+              </div>
+            )}
+            
+            {lease.firstRegistrationDate && (
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] font-bold tracking-[0.05em] text-on-surface-variant/75 uppercase">Erstzulassung</span>
+                <span className="text-primary font-medium">
+                  {lease.firstRegistrationDate ? new Date(lease.firstRegistrationDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                </span>
+              </div>
+            )}
+
+            {lease.leaseContractNumber && (
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] font-bold tracking-[0.05em] text-on-surface-variant/75 uppercase">Contract No. (Vertragsnr.)</span>
+                <span className="font-mono text-primary font-medium">{lease.leaseContractNumber}</span>
+              </div>
+            )}
+
+            {lease.leaseCustomerNumber && (
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] font-bold tracking-[0.05em] text-on-surface-variant/75 uppercase">Customer No. (Kundennr.)</span>
+                <span className="font-mono text-primary font-medium">{lease.leaseCustomerNumber}</span>
+              </div>
+            )}
+
+            {(lease.parkingPermitValidFrom || lease.parkingPermitValidTo) && (
+              <div className="col-span-2 flex flex-col gap-0.5 mt-1 pt-2 border-t border-outline-variant/10">
+                <span className="text-[9px] font-bold tracking-[0.05em] text-on-surface-variant/75 uppercase">Resident Parking Permit (Bewohnerparkausweis)</span>
+                <div className="flex items-center gap-1.5 text-primary font-medium">
+                  <span>{lease.parkingPermitValidFrom ? new Date(lease.parkingPermitValidFrom).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-on-surface-variant/65" />
+                  <span>{lease.parkingPermitValidTo ? new Date(lease.parkingPermitValidTo).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Contract Parameters Summary Indicators */}
       <section className="grid grid-cols-2 gap-4">
         <div className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/20 shadow-sm flex flex-col gap-1">
@@ -125,15 +203,17 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
         <form onSubmit={handleSave} className="flex flex-col gap-6">
           
           {/* Section 1: User Inputs */}
-          <div className="flex flex-col gap-4">
-            <div className="text-[10px] font-bold text-on-surface-variant/70 tracking-[0.1em] uppercase flex items-center gap-1.5 border-b border-outline-variant/20 pb-1">
+          <div className="flex flex-col gap-5">
+            
+            {/* 1.1 Vehicle Specifications */}
+            <div className="text-[10px] font-bold text-on-surface-variant/70 tracking-[0.1em] uppercase flex items-center gap-1.5 border-b border-outline-variant/20 pb-1 mt-1">
               <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-              Enter Contract Details
+              Vehicle Specifications
             </div>
 
             {/* Car Model input */}
             <div className="flex flex-col gap-1.5">
-              <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase">
+              <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
                 Car Model Name
               </label>
               <input
@@ -145,11 +225,116 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              {/* Car Registration */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
+                  Registration / Kennzeichen
+                </label>
+                <input
+                  type="text"
+                  value={carRegistration}
+                  onChange={(e) => setCarRegistration(e.target.value)}
+                  className="px-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl font-sans text-[13px] text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  placeholder="e.g. M-CE 1234"
+                />
+              </div>
+
+              {/* First Registration */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
+                  Erstzulassung
+                </label>
+                <input
+                  type="date"
+                  value={firstRegistrationDate}
+                  onChange={(e) => setFirstRegistrationDate(e.target.value)}
+                  className="px-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl font-sans text-[13px] text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* 1.2 Resident Parking Permit */}
+            <div className="text-[10px] font-bold text-on-surface-variant/70 tracking-[0.1em] uppercase flex items-center gap-1.5 border-b border-outline-variant/20 pb-1 mt-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              Resident Parking / Bewohnerparkausweis
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Valid From */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
+                  Valid From / Gültig von
+                </label>
+                <input
+                  type="date"
+                  value={parkingPermitValidFrom}
+                  onChange={(e) => setParkingPermitValidFrom(e.target.value)}
+                  className="px-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl font-sans text-[13px] text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                />
+              </div>
+
+              {/* Valid To */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
+                  Valid To / Gültig bis
+                </label>
+                <input
+                  type="date"
+                  value={parkingPermitValidTo}
+                  onChange={(e) => setParkingPermitValidTo(e.target.value)}
+                  className="px-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl font-sans text-[13px] text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* 1.3 Lease Account Details */}
+            <div className="text-[10px] font-bold text-on-surface-variant/70 tracking-[0.1em] uppercase flex items-center gap-1.5 border-b border-outline-variant/20 pb-1 mt-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              Contract & Account Numbers
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Lease Contract Number */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
+                  Contract No. / Vertragsnr.
+                </label>
+                <input
+                  type="text"
+                  value={leaseContractNumber}
+                  onChange={(e) => setLeaseContractNumber(e.target.value)}
+                  className="px-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl font-sans text-[13px] text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  placeholder="e.g. L-902384"
+                />
+              </div>
+
+              {/* Customer Number */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
+                  Customer No. / Kundennr.
+                </label>
+                <input
+                  type="text"
+                  value={leaseCustomerNumber}
+                  onChange={(e) => setLeaseCustomerNumber(e.target.value)}
+                  className="px-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl font-sans text-[13px] text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  placeholder="e.g. KD-48204"
+                />
+              </div>
+            </div>
+
+            {/* 1.4 Mileage & Term Specifications */}
+            <div className="text-[10px] font-bold text-on-surface-variant/70 tracking-[0.1em] uppercase flex items-center gap-1.5 border-b border-outline-variant/20 pb-1 mt-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              Term & Mileage Allocation
+            </div>
+
             {/* Grid fields */}
             <div className="grid grid-cols-2 gap-4">
               {/* Lease Start Date */}
-              <div className="flex flex-col">
-                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase h-9 flex items-end pb-1">
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
                   Start Date
                 </label>
                 <input
@@ -162,8 +347,8 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
               </div>
 
               {/* Lease Term */}
-              <div className="flex flex-col">
-                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase h-9 flex items-end pb-1">
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
                   Term (Months)
                 </label>
                 <input
@@ -179,9 +364,9 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
 
             <div className="grid grid-cols-2 gap-4">
               {/* Allowed Distance per Year */}
-              <div className="flex flex-col">
-                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase h-9 flex items-end pb-1">
-                  Allowed Distance / Year (km)
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
+                  Allowed Distance / Yr (km)
                 </label>
                 <input
                   type="number"
@@ -194,8 +379,8 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
               </div>
 
               {/* Initial Odometer */}
-              <div className="flex flex-col">
-                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase h-9 flex items-end pb-1">
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
                   Initial Odo (km)
                 </label>
                 <input
@@ -209,22 +394,40 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
               </div>
             </div>
 
-            {/* Excess Mileage Charge rate */}
-            <div className="flex flex-col gap-1.5">
-              <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase">
-                Excess Mileage Fee (per km)
-              </label>
-              <div className="relative">
+            {/* Excess and Free Excess Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Free Excess Mileage */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
+                  Free Excess Mileage (km)
+                </label>
                 <input
                   type="number"
-                  value={excessCharge}
-                  onChange={(e) => setExcessCharge(e.target.value)}
-                  className="w-full pl-8 pr-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl font-sans text-[14px] text-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                  step="0.01"
+                  value={freeExcessKm}
+                  onChange={(e) => setFreeExcessKm(e.target.value)}
+                  className="px-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl font-sans text-[13px] text-primary focus:ring-1 focus:ring-primary focus:outline-none"
                   min="0"
                   required
                 />
-                <Euro className="absolute left-3.5 top-3.5 w-4 h-4 text-on-surface-variant/50 pointer-events-none" />
+              </div>
+
+              {/* Excess Mileage Charge rate */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-[11px] font-bold tracking-[0.05em] text-on-surface-variant uppercase min-h-[2.25rem] flex items-end pb-1">
+                  Excess Fee (per km)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={excessCharge}
+                    onChange={(e) => setExcessCharge(e.target.value)}
+                    className="w-full pl-8 pr-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl font-sans text-[13px] text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                  <Euro className="absolute left-3.5 top-3.5 w-4 h-4 text-on-surface-variant/50 pointer-events-none" />
+                </div>
               </div>
             </div>
           </div>
@@ -257,7 +460,7 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
                     {totalAllowedKmNum.toLocaleString()} km
                   </p>
                   <span className="text-[9px] text-on-surface-variant/60 font-medium">
-                    {allowedKmPerYearNum.toLocaleString()} km/yr × {termMonthsNum} mo
+                    {baseTotalAllowedKmNum.toLocaleString()} km base + {freeExcessKmNum.toLocaleString()} km free excess
                   </span>
                 </div>
               </div>
@@ -317,6 +520,59 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
             <div className="p-3 bg-surface-container-low rounded-xl flex justify-between items-center text-[11px] font-medium text-on-surface-variant">
               <span>Excess Mileage Charge rate</span>
               <span className="font-bold text-primary">€{excessChargeNum.toFixed(2)} / km</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Reminders Panel */}
+      <section className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/30 shadow-[0_4px_40px_-12px_rgba(0,0,0,0.03)] flex flex-col gap-4">
+        <div className="flex items-center gap-2 border-b border-outline-variant/20 pb-2">
+          <Bell className="w-4 h-4 text-secondary animate-bounce" style={{ animationDuration: '3s' }} />
+          <h3 className="font-sans text-[11px] font-bold tracking-[0.1em] text-primary uppercase">
+            Active Reminders & Deadlines
+          </h3>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {/* Resident Parking Permit Reminder */}
+          <div className="flex gap-3 items-start bg-surface-container-low/40 p-3.5 rounded-xl border border-outline-variant/10">
+            <span className="w-2 h-2 rounded-full bg-secondary shrink-0 mt-1.5"></span>
+            <div className="flex flex-col gap-0.5 text-[12px]">
+              <span className="font-bold text-primary">Resident Parking Permit Renewal</span>
+              {lease.parkingPermitValidTo ? (
+                <p className="text-on-surface-variant leading-relaxed">
+                  Your permit is valid until <span className="font-bold text-primary">{new Date(lease.parkingPermitValidTo).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>. Please apply for renewal before this date to prevent parking tickets.
+                </p>
+              ) : (
+                <p className="text-on-surface-variant/60 italic leading-relaxed">
+                  Expiration date not set. Enter your resident parking permit validity in the specification registry to activate renewal deadlines.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* First Hauptuntersuchung (TÜV) Reminder */}
+          <div className="flex gap-3 items-start bg-surface-container-low/40 p-3.5 rounded-xl border border-outline-variant/10">
+            <span className="w-2 h-2 rounded-full bg-secondary shrink-0 mt-1.5"></span>
+            <div className="flex flex-col gap-0.5 text-[12px]">
+              <span className="font-bold text-primary">First Main Inspection (HU / TÜV)</span>
+              {lease.firstRegistrationDate ? (
+                (() => {
+                  const tuvDate = new Date(lease.firstRegistrationDate);
+                  tuvDate.setFullYear(tuvDate.getFullYear() + 3);
+                  const formattedTuvDate = tuvDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+                  return (
+                    <p className="text-on-surface-variant leading-relaxed">
+                      First main inspection (TÜV) is due on <span className="font-bold text-primary">{formattedTuvDate}</span> (36 months/3 years after the Erstzulassung).
+                    </p>
+                  );
+                })()
+              ) : (
+                <p className="text-on-surface-variant/60 italic leading-relaxed">
+                  First registration date not set. Enter your vehicle's Erstzulassung above to automatically calculate your first TÜV inspection due date.
+                </p>
+              )}
             </div>
           </div>
         </div>

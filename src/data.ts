@@ -4,9 +4,16 @@ export const DEFAULT_LEASE: LeaseInfo = {
   carModel: 'BMW X1 sDrive20i M Sport',
   startDate: '2025-08-01',
   termMonths: 12,
-  totalAllowedKm: 15000,
+  totalAllowedKm: 17500,
   initialOdometer: 0,
-  monthlyAllocation: 1250,
+  monthlyAllocation: 1458,
+  freeExcessKm: 2500,
+  carRegistration: '',
+  firstRegistrationDate: '',
+  parkingPermitValidFrom: '',
+  parkingPermitValidTo: '',
+  leaseContractNumber: '',
+  leaseCustomerNumber: '',
 };
 
 export const DEFAULT_ODOMETER_LOGS: OdometerLog[] = [];
