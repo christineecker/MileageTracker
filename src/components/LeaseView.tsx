@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Settings, Info, Save, Car, Calendar, Euro, ArrowRight, Bell } from 'lucide-react';
+import { Settings, Info, Save, Car, Calendar, Euro, ArrowRight, Bell, RotateCcw } from 'lucide-react';
 import { LeaseInfo } from '../types';
+import { DEFAULT_LEASE } from '../data';
 
 interface LeaseViewProps {
   lease: LeaseInfo;
   onUpdateLease: (updatedLease: LeaseInfo) => void;
+  onResetAllData?: () => void;
 }
 
-export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
+export default function LeaseView({ lease, onUpdateLease, onResetAllData }: LeaseViewProps) {
   const [carModel, setCarModel] = useState<string>(lease.carModel);
   const [startDate, setStartDate] = useState<string>(lease.startDate);
   const [termMonths, setTermMonths] = useState<string>(lease.termMonths.toString());
@@ -35,6 +37,36 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
   const [excessCharge, setExcessCharge] = useState<string>(() => localStorage.getItem('mileage_tracker_excess_charge') || "0.15"); // standard $0.15 / km Excess
 
   const [isSaved, setIsSaved] = useState<boolean>(false);
+
+  const handleReset = () => {
+    if (window.confirm("Are you sure you want to clear all odometer/trip history logs AND reset car/lease specifications to default settings?")) {
+      setCarModel(DEFAULT_LEASE.carModel);
+      setStartDate(DEFAULT_LEASE.startDate);
+      setTermMonths(DEFAULT_LEASE.termMonths.toString());
+      setFreeExcessKm((DEFAULT_LEASE.freeExcessKm !== undefined ? DEFAULT_LEASE.freeExcessKm : 2500).toString());
+      setCarRegistration(DEFAULT_LEASE.carRegistration || '');
+      setFirstRegistrationDate(DEFAULT_LEASE.firstRegistrationDate || '');
+      setParkingPermitValidFrom(DEFAULT_LEASE.parkingPermitValidFrom || '');
+      setParkingPermitValidTo(DEFAULT_LEASE.parkingPermitValidTo || '');
+      setLeaseContractNumber(DEFAULT_LEASE.leaseContractNumber || '');
+      setLeaseCustomerNumber(DEFAULT_LEASE.leaseCustomerNumber || '');
+      setAllowedKmPerYear("15000"); // 15000 base + 2500 free excess = 17500 totalAllowedKm
+      setInitialOdometer(DEFAULT_LEASE.initialOdometer.toString());
+      setExcessCharge("0.15");
+      localStorage.setItem('mileage_tracker_excess_charge', "0.15");
+
+      // Notify parent to reset lease details
+      onUpdateLease(DEFAULT_LEASE);
+
+      // Trigger resetting all logs (as requested)
+      if (onResetAllData) {
+        onResetAllData();
+      }
+
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    }
+  };
 
   // Safe numerical parsing for logic & display computations
   const termMonthsNum = parseInt(termMonths, 10) || 0;
@@ -220,7 +252,8 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
                 type="text"
                 value={carModel}
                 onChange={(e) => setCarModel(e.target.value)}
-                className="px-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl font-sans text-[14px] text-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                className="px-4 py-3 bg-surface-container-low border border-outline-variant/10 rounded-xl font-sans text-[14px] text-primary focus:ring-1 focus:ring-primary focus:outline-none w-full"
+                placeholder="e.g. BMW X1 sDrive20i"
                 required
               />
             </div>
@@ -493,9 +526,17 @@ export default function LeaseView({ lease, onUpdateLease }: LeaseViewProps) {
 
           <button
             type="submit"
-            className="mt-2 w-full py-3.5 bg-primary hover:opacity-90 active:scale-[0.98] text-on-primary rounded-xl font-sans text-[13px] font-bold tracking-[0.05em] transition-all flex items-center justify-center gap-1.5 uppercase shadow-sm"
+            className="mt-2 w-full py-3.5 bg-primary hover:opacity-90 active:scale-[0.98] text-on-primary rounded-xl font-sans text-[13px] font-bold tracking-[0.05em] transition-all flex items-center justify-center gap-1.5 uppercase shadow-sm cursor-pointer"
           >
             <Save className="w-4 h-4" /> Save Specifications
+          </button>
+
+          <button
+            type="button"
+            onClick={handleReset}
+            className="mt-3 w-full py-3.5 bg-error/5 hover:bg-error/10 active:scale-[0.98] text-error border border-error/20 hover:border-error/30 rounded-xl font-sans text-[13px] font-bold tracking-[0.05em] transition-all flex items-center justify-center gap-1.5 uppercase shadow-sm cursor-pointer"
+          >
+            <RotateCcw className="w-4 h-4" /> Clear All Data & Logs
           </button>
         </form>
 

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { LayoutGrid, PlusCircle, Activity, Car, Leaf, RotateCcw, Github, Sun, Moon, RefreshCw } from 'lucide-react';
+import { LayoutGrid, PlusCircle, Activity, Car, Leaf, Github, Sun, Moon, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { LeaseInfo, OdometerLog, TripLog, PurposeType } from './types';
@@ -17,7 +17,7 @@ import LeaseView from './components/LeaseView';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('status');
-  const [hoveredButton, setHoveredButton] = useState<'reset' | 'github' | 'theme' | 'update' | null>(null);
+  const [hoveredButton, setHoveredButton] = useState<'github' | 'theme' | 'update' | null>(null);
 
   // Theme support
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -126,14 +126,12 @@ export default function App() {
   };
 
   const handleResetAllData = () => {
-    if (window.confirm("Are you sure you want to clear all odometer and trip logs?")) {
-      localStorage.removeItem('mileage_tracker_odometer_logs');
-      localStorage.removeItem('zen_odometer_logs');
-      localStorage.removeItem('mileage_tracker_trip_logs');
-      localStorage.removeItem('zen_trip_logs');
-      setOdometerLogs([]);
-      setTripLogs([]);
-    }
+    localStorage.removeItem('mileage_tracker_odometer_logs');
+    localStorage.removeItem('zen_odometer_logs');
+    localStorage.removeItem('mileage_tracker_trip_logs');
+    localStorage.removeItem('zen_trip_logs');
+    setOdometerLogs([]);
+    setTripLogs([]);
   };
 
   // Tab switching renderer
@@ -175,6 +173,7 @@ export default function App() {
           <LeaseView 
             lease={lease} 
             onUpdateLease={handleUpdateLease} 
+            onResetAllData={handleResetAllData}
           />
         );
       default:
@@ -199,35 +198,6 @@ export default function App() {
         
         {/* Top actions */}
         <div className="flex items-center gap-2">
-          <div className="relative">
-            <button 
-              onClick={handleResetAllData}
-              onMouseEnter={() => {
-                if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
-                  setHoveredButton('reset');
-                }
-              }}
-              onMouseLeave={() => setHoveredButton(null)}
-              className="p-2 rounded-full hover:bg-surface-container text-on-surface-variant/70 hover:text-primary transition-all active:scale-95 cursor-pointer flex items-center justify-center"
-              aria-label="Reset All Data"
-            >
-              <RotateCcw className="w-4.5 h-4.5" />
-            </button>
-            <AnimatePresence>
-              {hoveredButton === 'reset' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 4, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 4, scale: 0.95 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                  className="absolute right-0 top-11 z-50 bg-neutral-900 text-white text-[11px] font-medium px-3 py-2 rounded-xl shadow-xl whitespace-nowrap pointer-events-none border border-white/10"
-                >
-                  Clear all odometer and trip history logs
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
           <div className="relative">
             <button 
               onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
