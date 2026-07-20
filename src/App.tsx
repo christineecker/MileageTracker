@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { LayoutGrid, PlusCircle, Activity, Car, Leaf, RotateCcw, Github, Sun, Moon } from 'lucide-react';
+import { LayoutGrid, PlusCircle, Activity, Car, Leaf, RotateCcw, Github, Sun, Moon, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { LeaseInfo, OdometerLog, TripLog, PurposeType } from './types';
@@ -17,7 +17,7 @@ import LeaseView from './components/LeaseView';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('status');
-  const [hoveredButton, setHoveredButton] = useState<'reset' | 'github' | 'theme' | null>(null);
+  const [hoveredButton, setHoveredButton] = useState<'reset' | 'github' | 'theme' | 'update' | null>(null);
 
   // Theme support
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -117,6 +117,10 @@ export default function App() {
     setOdometerLogs(prev => prev.filter(log => log.id !== id));
   };
 
+  const handleUpdateOdometerLog = (id: string, value: number, date: string) => {
+    setOdometerLogs(prev => prev.map(log => log.id === id ? { ...log, value, date } : log).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  };
+
   const handleDeleteTripLog = (id: string) => {
     setTripLogs(prev => prev.filter(log => log.id !== id));
   };
@@ -153,6 +157,7 @@ export default function App() {
             onAddOdometerLog={handleAddOdometerLog}
             onAddTripLog={handleAddTripLog}
             onDeleteOdometerLog={handleDeleteOdometerLog}
+            onUpdateOdometerLog={handleUpdateOdometerLog}
             onDeleteTripLog={handleDeleteTripLog}
           />
         );
@@ -197,7 +202,11 @@ export default function App() {
           <div className="relative">
             <button 
               onClick={handleResetAllData}
-              onMouseEnter={() => setHoveredButton('reset')}
+              onMouseEnter={() => {
+                if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+                  setHoveredButton('reset');
+                }
+              }}
               onMouseLeave={() => setHoveredButton(null)}
               className="p-2 rounded-full hover:bg-surface-container text-on-surface-variant/70 hover:text-primary transition-all active:scale-95 cursor-pointer flex items-center justify-center"
               aria-label="Reset All Data"
@@ -222,7 +231,11 @@ export default function App() {
           <div className="relative">
             <button 
               onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
-              onMouseEnter={() => setHoveredButton('theme')}
+              onMouseEnter={() => {
+                if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+                  setHoveredButton('theme');
+                }
+              }}
               onMouseLeave={() => setHoveredButton(null)}
               className="p-2 rounded-full hover:bg-surface-container text-on-surface-variant/70 hover:text-primary transition-all active:scale-95 cursor-pointer flex items-center justify-center"
               aria-label="Toggle Theme"
@@ -249,11 +262,48 @@ export default function App() {
           </div>
 
           <div className="relative">
+            <button 
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.location.reload();
+                }
+              }}
+              onMouseEnter={() => {
+                if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+                  setHoveredButton('update');
+                }
+              }}
+              onMouseLeave={() => setHoveredButton(null)}
+              className="p-2 rounded-full hover:bg-surface-container text-on-surface-variant/70 hover:text-primary transition-all active:scale-95 cursor-pointer flex items-center justify-center"
+              aria-label="Refresh and Update App"
+            >
+              <RefreshCw className="w-4.5 h-4.5" />
+            </button>
+            <AnimatePresence>
+              {hoveredButton === 'update' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  className="absolute right-0 top-11 z-50 bg-neutral-900 text-white text-[11px] font-medium px-3 py-2 rounded-xl shadow-xl whitespace-nowrap pointer-events-none border border-white/10"
+                >
+                  Reload and check for updates
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="relative">
             <a 
               href={githubRepoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              onMouseEnter={() => setHoveredButton('github')}
+              onMouseEnter={() => {
+                if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+                  setHoveredButton('github');
+                }
+              }}
               onMouseLeave={() => setHoveredButton(null)}
               className="p-2 rounded-full hover:bg-surface-container text-on-surface-variant/70 hover:text-primary transition-all active:scale-95 flex items-center justify-center cursor-pointer"
               aria-label="GitHub Repository"
