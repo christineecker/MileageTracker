@@ -1,9 +1,12 @@
-const CACHE_NAME = 'mileagetracker-cache-v1';
+const CACHE_NAME = 'mileagetracker-cache-v2';
 const ASSETS = [
   './',
   'index.html',
   'manifest.json',
-  'icon.svg'
+  'icon-192.png',
+  'icon-512.png',
+  'apple-touch-icon.png',
+  'favicon-32.png'
 ];
 
 // Install Event - cache core static shell files
