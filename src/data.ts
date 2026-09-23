@@ -84,3 +84,13 @@ export function getCarImageUrl(modelName: string): string {
   return 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=1000';
 }
 
+
+// Odometer logs are absolute readings (the balance on a date), never deltas.
+// The current reading is therefore the most recent log, not a sum.
+export function getCurrentOdometer(odometerLogs: OdometerLog[], lease: LeaseInfo): number {
+  if (odometerLogs.length === 0) return lease.initialOdometer;
+  const latest = [...odometerLogs].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  )[0];
+  return latest.value;
+}

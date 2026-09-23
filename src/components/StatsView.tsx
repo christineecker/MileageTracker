@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LeaseInfo, OdometerLog } from '../types';
+import { getCurrentOdometer } from '../data';
 
 interface StatsViewProps {
   lease: LeaseInfo;
@@ -51,12 +52,8 @@ export default function StatsView({ lease, odometerLogs, onNavigate }: StatsView
     return parseFloat(localStorage.getItem('mileage_tracker_excess_charge') || "0.15");
   }, []);
 
-  // Current Odometer: get the highest odometer log or initialOdometer (cumulative km across checkpoints)
-  const currentOdometer = useMemo(() => {
-    if (odometerLogs.length === 0) return lease.initialOdometer;
-    const maxVal = Math.max(...odometerLogs.map(log => log.value));
-    return Math.max(lease.initialOdometer, maxVal);
-  }, [odometerLogs, lease]);
+  // Current Odometer: the most recent absolute reading, otherwise lease.initialOdometer
+  const currentOdometer = useMemo(() => getCurrentOdometer(odometerLogs, lease), [odometerLogs, lease]);
 
   // Current Month Name
   const currentMonthName = useMemo(() => {
@@ -148,7 +145,7 @@ export default function StatsView({ lease, odometerLogs, onNavigate }: StatsView
     const pacingDiff = actualDrivenKm - targetDrivenKm;
 
     // Adjusted monthly allowance for remaining months
-    const remainingKmToDrive = Math.max(0, lease.totalAllowedKm - currentOdometer);
+    const remainingKmToDrive = Math.max(0, lease.totalAllowedKm - totalActualDriven);
     const adjustedMonthlyAllowance = remainingMonths > 0.1 
       ? Math.round(remainingKmToDrive / remainingMonths) 
       : 0;
@@ -164,7 +161,7 @@ export default function StatsView({ lease, odometerLogs, onNavigate }: StatsView
       adjustedMonthlyAllowance,
       remainingKmToDrive
     };
-  }, [daysInfo, lease.monthlyAllocation, lease.termMonths, lease.totalAllowedKm, currentOdometer, totalActualDriven]);
+  }, [daysInfo, lease.monthlyAllocation, lease.termMonths, lease.totalAllowedKm, totalActualDriven]);
 
   // Compute Last 6 Months Trend dynamically
   const trendData = useMemo(() => {

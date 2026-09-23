@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Calendar, TrendingUp, TrendingDown, Gauge, Compass, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LeaseInfo, OdometerLog, TripLog } from '../types';
+import { getCurrentOdometer } from '../data';
 
 interface StatusViewProps {
   lease: LeaseInfo;
@@ -23,16 +24,19 @@ export default function StatusView({ lease, odometerLogs, tripLogs, onNavigate }
   const [selectedYearIndex, setSelectedYearIndex] = useState<number | null>(null);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(4); // Default to current month (index 4)
 
-  // Current Odometer: get the sum of all odometer logs once data is entered, otherwise lease.initialOdometer
-  const currentOdometer = useMemo(() => {
-    if (odometerLogs.length === 0) return lease.initialOdometer;
-    return odometerLogs.reduce((acc, log) => acc + log.value, 0);
-  }, [odometerLogs, lease]);
+  // Current Odometer: the most recent absolute reading, otherwise lease.initialOdometer
+  const currentOdometer = useMemo(() => getCurrentOdometer(odometerLogs, lease), [odometerLogs, lease]);
+
+  // Km driven under this lease. The allowance is spent from initialOdometer, not from zero.
+  const drivenKm = useMemo(
+    () => Math.max(0, currentOdometer - lease.initialOdometer),
+    [currentOdometer, lease.initialOdometer]
+  );
 
   // Remaining km
   const remainingKm = useMemo(() => {
-    return Math.max(0, lease.totalAllowedKm - currentOdometer);
-  }, [lease.totalAllowedKm, currentOdometer]);
+    return Math.max(0, lease.totalAllowedKm - drivenKm);
+  }, [lease.totalAllowedKm, drivenKm]);
 
   // Calculations for days elapsed
   const daysInfo = useMemo(() => {
@@ -62,24 +66,24 @@ export default function StatusView({ lease, odometerLogs, tripLogs, onNavigate }
     const allowedUpToNow = allowedRate * elapsedDays;
     
     // Difference is the surplus/deficit
-    const surplus = Math.round(allowedUpToNow - currentOdometer);
+    const surplus = Math.round(allowedUpToNow - drivenKm);
     
     return {
       surplus,
       isSurplus: surplus >= 0,
       formattedSurplus: surplus >= 0 ? `+${surplus.toLocaleString()} km Surplus` : `${Math.abs(surplus).toLocaleString()} km Overshoot`,
     };
-  }, [lease, currentOdometer]);
+  }, [lease, drivenKm]);
 
   // Circle progress calculation (dashoffset)
   const circleProgress = useMemo(() => {
-    const pct = Math.min(100, (currentOdometer / lease.totalAllowedKm) * 100);
+    const pct = Math.min(100, (drivenKm / lease.totalAllowedKm) * 100);
     // Radius of circle is 120, circumference is 2 * PI * 120 ≈ 754
     const r = 120;
     const c = 2 * Math.PI * r;
     const offset = c - (pct / 100) * c;
     return { strokeDashoffset: offset, strokeDasharray: c };
-  }, [currentOdometer, lease.totalAllowedKm]);
+  }, [drivenKm, lease.totalAllowedKm]);
 
   // Compute Current Month Usage
   const currentMonthUsage = useMemo(() => {
@@ -97,8 +101,8 @@ export default function StatusView({ lease, odometerLogs, tripLogs, onNavigate }
     }
 
     // Default fallback if no previous month log
-    return Math.max(0, currentOdometer - lease.initialOdometer);
-  }, [odometerLogs, currentOdometer, lease.initialOdometer]);
+    return drivenKm;
+  }, [odometerLogs, drivenKm]);
 
 
 
@@ -106,7 +110,7 @@ export default function StatusView({ lease, odometerLogs, tripLogs, onNavigate }
   const leaseMetrics = useMemo(() => {
     const elapsedMonths = daysInfo.elapsed / 30.4375;
     const averageMonthly = odometerLogs.length > 0 
-      ? Math.round(currentOdometer / Math.max(0.1, elapsedMonths))
+      ? Math.round(drivenKm / Math.max(0.1, elapsedMonths))
       : 0;
     const projectedTotal = odometerLogs.length > 0 
       ? averageMonthly * lease.termMonths
@@ -120,7 +124,7 @@ export default function StatusView({ lease, odometerLogs, tripLogs, onNavigate }
       projectedTotal,
       projectedSurplus,
     };
-  }, [lease, currentOdometer, daysInfo.elapsed, odometerLogs]);
+  }, [lease, drivenKm, daysInfo.elapsed, odometerLogs]);
 
   // Specific timeframe metrics: pacing, where user should be, and adjusted future allowances
   const leaseTimeframeInfo = useMemo(() => {
@@ -133,13 +137,13 @@ export default function StatusView({ lease, odometerLogs, tripLogs, onNavigate }
     const targetDrivenKm = Math.round(elapsedMonths * lease.monthlyAllocation);
     
     // Actual driven km up to now
-    const actualDrivenKm = Math.max(0, currentOdometer - lease.initialOdometer);
+    const actualDrivenKm = drivenKm;
 
     // Pacing difference
     const pacingDiff = actualDrivenKm - targetDrivenKm;
 
     // Adjusted monthly allowance for remaining months
-    const remainingKmToDrive = Math.max(0, lease.totalAllowedKm - currentOdometer);
+    const remainingKmToDrive = Math.max(0, lease.totalAllowedKm - drivenKm);
     const adjustedMonthlyAllowance = remainingMonths > 0.1 
       ? Math.round(remainingKmToDrive / remainingMonths) 
       : 0;
@@ -155,7 +159,7 @@ export default function StatusView({ lease, odometerLogs, tripLogs, onNavigate }
       adjustedMonthlyAllowance,
       remainingKmToDrive
     };
-  }, [daysInfo, lease.monthlyAllocation, lease.termMonths, lease.totalAllowedKm, currentOdometer, lease.initialOdometer]);
+  }, [daysInfo, lease.monthlyAllocation, lease.termMonths, lease.totalAllowedKm, drivenKm]);
 
   // Current month percentage of monthly allocation (adjusted)
   const currentMonthPercent = useMemo(() => {
@@ -196,8 +200,8 @@ export default function StatusView({ lease, odometerLogs, tripLogs, onNavigate }
 
   // Total mileage actually driven so far
   const totalActualDriven = useMemo(() => {
-    return Math.max(0, currentOdometer - lease.initialOdometer);
-  }, [currentOdometer, lease.initialOdometer]);
+    return drivenKm;
+  }, [drivenKm]);
 
   // Target Pace / On-Track Cumulative (allowance pro-rated to current elapsed lease duration)
   const totalAllowedToDate = useMemo(() => {
@@ -350,7 +354,7 @@ export default function StatusView({ lease, odometerLogs, tripLogs, onNavigate }
       };
     } else {
       // 'total'
-      const usage = currentOdometer;
+      const usage = drivenKm;
       const limit = lease.totalAllowedKm;
       const remaining = Math.max(0, limit - usage);
       const pct = Math.min(100, (usage / limit) * 100);
@@ -368,7 +372,7 @@ export default function StatusView({ lease, odometerLogs, tripLogs, onNavigate }
         formattedSurplus: surplusInfo.formattedSurplus
       };
     }
-  }, [trendTab, lease, currentOdometer, currentMonthUsage, currentYearTrendItem, surplusInfo, leaseTimeframeInfo]);
+  }, [trendTab, lease, drivenKm, currentMonthUsage, currentYearTrendItem, surplusInfo, leaseTimeframeInfo]);
 
   // Last odometer checkpoint
   const lastOdometerLog = useMemo(() => {

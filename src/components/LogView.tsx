@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { History, Check, Trash2, Calendar, Pencil } from 'lucide-react';
 import { OdometerLog, LeaseInfo } from '../types';
+import { getCurrentOdometer } from '../data';
 
 interface LogViewProps {
   lease: LeaseInfo;
@@ -48,11 +49,8 @@ export default function LogView({
     setEditingId(null);
   };
 
-  // Current Odometer: get the sum of all odometer logs once data is entered, otherwise lease.initialOdometer
-  const currentOdometer = useMemo(() => {
-    if (odometerLogs.length === 0) return lease.initialOdometer;
-    return odometerLogs.reduce((acc, log) => acc + log.value, 0);
-  }, [odometerLogs, lease]);
+  // Current Odometer: the most recent absolute reading, otherwise lease.initialOdometer
+  const currentOdometer = useMemo(() => getCurrentOdometer(odometerLogs, lease), [odometerLogs, lease]);
 
   // Odometer reading calculations
   const lastOdometerLog = useMemo(() => {
